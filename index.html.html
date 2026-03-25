@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Produtos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        input[type="file"] { display: none; }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-enter { animation: slideIn 0.3s ease-out forwards; }
+
+        /* Esconde barra de rolagem mas mantém funcionamento */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <!-- ========================================== -->
+    <!-- TELA 1: VISÃO DO CLIENTE (CATÁLOGO)        -->
+    <!-- ========================================== -->
+    <div id="view-catalog" class="flex flex-col min-h-screen transition-all duration-300">
+        <!-- Navbar -->
+        <nav class="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+                
+                <!-- Logo e Nome -->
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="bg-indigo-600 w-12 h-12 md:w-14 md:h-14 rounded-xl text-white flex items-center justify-center overflow-hidden shadow-sm shrink-0">
+                        <i id="client-logo-icon" class="fa-solid fa-store text-xl md:text-2xl"></i>
+                        <img id="client-logo-img" src="" class="hidden w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <h1 id="client-shop-name" class="text-lg md:text-xl font-black text-slate-900 leading-none truncate">Meu Catálogo</h1>
+                        <p id="client-shop-slogan" class="text-xs text-slate-500 mt-1 truncate">Gestão de Produtos & Preços</p>
+                    </div>
+                </div>
+
+                <!-- Busca -->
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="search-input" oninput="renderClientProducts()" placeholder="Buscar produtos..." class="w-full pl-10 pr-4 py-2 md:py-2.5 bg-gray-100 border-transparent rounded-full focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition text-sm">
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content (Cliente) -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8 flex-1 w-full">
+            <div id="empty-state" class="bg-white rounded-2xl border border-dashed border-gray-300 p-12 md:p-20 text-center">
+                <i class="fa-solid fa-box-open text-4xl md:text-5xl text-gray-200 mb-4"></i>
+                <h3 class="text-lg md:text-xl font-bold text-slate-700">Catálogo vazio</h3>
+                <p class="text-sm md:text-base text-gray-500 mt-1">Nenhum produto disponível no momento.</p>
+            </div>
+
+            <div id="client-products-grid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 hidden"></div>
+        </main>
+
+        <!-- Rodapé do Lojista -->
+        <footer class="mt-auto py-8 text-center bg-gray-50">
+            <button onclick="switchView('view-login')" class="text-xs font-medium text-gray-400 hover:text-indigo-600 transition flex items-center justify-center gap-1 mx-auto">
+                <i class="fa-solid fa-lock"></i> Área do Lojista
+            </button>
+        </footer>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- TELA 2: LOGIN DO ADMINISTRADOR             -->
+    <!-- ========================================== -->
+    <div id="view-login" class="hidden min-h-screen flex items-center justify-center bg-slate-900 px-4">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-indigo-500"></div>
+            
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-user-shield text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-800">Acesso Restrito</h2>
+                <p class="text-sm text-gray-500 mt-1">Faça login para gerenciar seu catálogo</p>
+                <p class="text-[10px] text-indigo-400 mt-2 bg-indigo-50 py-1 rounded">Acesso padrão: <b>admin</b> / <b>1234</b></p>
+            </div>
+
+            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-5">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Usuário</label>
+                    <div class="relative mt-1">
+                        <i class="fa-regular fa-user absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="login-user" required class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Senha</label>
+                    <div class="relative mt-1">
+                        <i class="fa-solid fa-key absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="password" id="login-pass" required class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none transition">
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">
+                    Entrar no Painel
+                </button>
+            </form>
+
+            <button onclick="switchView('view-catalog')" class="w-full mt-4 text-sm text-gray-500 hover:text-slate-800 transition py-2">
+                &larr; Voltar ao Catálogo
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- TELA 3: PAINEL ADMINISTRATIVO              -->
+    <!-- ========================================== -->
+    <div id="view-admin" class="hidden min-h-screen bg-slate-100 flex flex-col">
+        <!-- Admin Navbar -->
+        <nav class="bg-slate-900 text-white shadow-md z-50 sticky top-0">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-sliders text-indigo-400 text-xl"></i>
+                    <h1 class="font-bold hidden md:block">Painel de Controle</h1>
+                </div>
+                <div class="flex items-center gap-2 md:gap-4">
+                    <button onclick="switchView('view-catalog')" class="text-sm bg-slate-800 hover:bg-slate-700 px-3 md:px-4 py-2 rounded-lg transition text-slate-300 hover:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-eye"></i> <span class="hidden md:inline">Ver Loja</span>
+                    </button>
+                    <button onclick="logout()" class="text-sm bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white px-3 md:px-4 py-2 rounded-lg transition flex items-center gap-2 font-medium">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> <span class="hidden md:inline">Sair</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Admin Dashboard -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 flex flex-col lg:flex-row gap-6">
+            
+            <!-- Coluna 1: Configurações -->
+            <div class="w-full lg:w-1/3 space-y-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-6">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800 border-b pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-store text-indigo-500"></i> Perfil da Loja
+                    </h2>
+                    
+                    <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-4">
+                        <!-- Upload de Logo -->
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden cursor-pointer hover:border-indigo-400 transition" onclick="document.getElementById('admin-logo-upload').click()">
+                                <img id="admin-logo-preview" src="" class="hidden w-full h-full object-cover">
+                                <i id="admin-logo-icon" class="fa-solid fa-camera text-gray-400"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-700">Logo da Loja</h3>
+                                <p class="text-xs text-gray-500">Clique para alterar</p>
+                                <input id="admin-logo-upload" type="file" accept="image/*" onchange="handleAdminLogo(event)">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Nome da Loja</label>
+                            <input type="text" id="cfg-name" required class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Slogan / Descrição</label>
+                            <input type="text" id="cfg-slogan" required class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Número do WhatsApp (com DDD)</label>
+                            <div class="relative mt-1">
+                                <i class="fa-brands fa-whatsapp absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500"></i>
+                                <input type="number" id="cfg-whatsapp" placeholder="Ex: 11999999999" class="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+
+                        <h2 class="text-lg font-bold mb-4 mt-6 text-slate-800 border-b pb-2 pt-4 flex items-center gap-2">
+                            <i class="fa-solid fa-key text-indigo-500"></i> Segurança
+                        </h2>
+                        
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Novo Usuário Admin</label>
+                            <input type="text" id="cfg-user" required class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500">Nova Senha Admin</label>
+                            <input type="text" id="cfg-pass" required class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500">
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-lg hover:bg-slate-800 transition mt-4 flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Backup Options -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-6">
+                    <h2 class="text-sm font-bold mb-3 text-slate-800">Dados & Backup</h2>
+                    <div class="flex gap-2">
+                        <button onclick="exportData()" class="flex-1 bg-indigo-50 text-indigo-600 font-medium py-2 rounded-lg text-xs hover:bg-indigo-100 transition flex flex-col items-center gap-1">
+                            <i class="fa-solid fa-download text-lg"></i> Salvar Arquivo
+                        </button>
+                        <button onclick="document.getElementById('import-file').click()" class="flex-1 bg-gray-50 text-gray-600 font-medium py-2 rounded-lg text-xs hover:bg-gray-100 transition flex flex-col items-center gap-1 border border-gray-200">
+                            <i class="fa-solid fa-upload text-lg"></i> Restaurar
+                        </button>
+                        <input type="file" id="import-file" accept=".json" onchange="importData(event)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Produtos -->
+            <div class="w-full lg:w-2/3 space-y-6">
+                
+                <!-- Adicionar Produto Form -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-6">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-box text-indigo-500"></i> Adicionar Produto
+                    </h2>
+                    
+                    <form id="admin-product-form" onsubmit="addProduct(event)" class="flex flex-col md:flex-row gap-4 items-start">
+                        <!-- Imagem -->
+                        <div class="w-full md:w-32 h-32 bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-indigo-400 transition overflow-hidden shrink-0 relative" onclick="document.getElementById('admin-image-upload').click()">
+                            <div id="admin-image-placeholder" class="text-center">
+                                <i class="fa-solid fa-camera text-xl text-gray-400 mb-1"></i>
+                                <p class="text-[10px] font-medium text-gray-500">Foto</p>
+                            </div>
+                            <img id="admin-image-preview" src="" class="hidden absolute inset-0 w-full h-full object-cover">
+                            <input id="admin-image-upload" type="file" accept="image/*" onchange="handleProductImage(event)">
+                        </div>
+
+                        <!-- Campos -->
+                        <div class="flex-1 w-full space-y-3">
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Nome do Produto</label>
+                                <input type="text" id="prod-name" required placeholder="Ex: Tênis Esportivo" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-gray-500">Descrição (Opcional)</label>
+                                <textarea id="prod-desc" rows="2" placeholder="Detalhes do produto..." class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500 resize-none"></textarea>
+                            </div>
+                            <div class="flex gap-3 items-end">
+                                <div class="flex-1">
+                                    <label class="text-xs font-bold text-gray-500">Preço (R$)</label>
+                                    <input type="number" id="prod-price" required step="0.01" placeholder="0.00" class="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-indigo-500">
+                                </div>
+                                <button type="submit" class="bg-indigo-600 text-white font-bold px-6 py-2 rounded-lg hover:bg-indigo-700 transition shadow-md h-[38px] flex items-center gap-2">
+                                    <i class="fa-solid fa-plus"></i> <span class="hidden md:inline">Adicionar</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lista de Produtos -->
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 md:p-6 overflow-hidden flex flex-col h-auto max-h-[500px]">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800 flex items-center gap-2 shrink-0">
+                        <i class="fa-solid fa-list text-indigo-500"></i> Produtos Cadastrados (<span id="admin-product-count">0</span>)
+                    </h2>
+                    
+                    <div class="overflow-y-auto no-scrollbar flex-1 border rounded-xl bg-gray-50/50">
+                        <div id="admin-products-list" class="divide-y divide-gray-100">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- NOTIFICAÇÕES                               -->
+    <!-- ========================================== -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3"></div>
+
+    <!-- ========================================== -->
+    <!-- SCRIPT                                     -->
+    <!-- ========================================== -->
+    <script>
+        // --- ESTADO DA APLICAÇÃO ---
+        let products = [];
+        let shopConfig = {
+            name: "Meu Catálogo",
+            slogan: "Gestão de Produtos & Preços",
+            logo: null,
+            whatsapp: "",
+            adminUser: "admin",
+            adminPass: "1234"
+        };
+        let currentProductImage = null;
+        let currentAdminLogo = null;
+        let isLoggedIn = false;
+
+        const currencyFormatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        // --- INICIALIZAÇÃO ---
+        window.onload = () => {
+            loadData();
+            switchView('view-catalog');
+        };
+
+        // --- NAVEGAÇÃO ENTRE TELAS ---
+        function switchView(viewId) {
+            document.getElementById('view-catalog').classList.add('hidden');
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            document.getElementById(viewId).classList.remove('hidden');
+
+            if (viewId === 'view-admin') {
+                if (!isLoggedIn) {
+                    // Proteção de rota simplificada
+                    switchView('view-login');
+                    return;
+                }
+                loadAdminSettings();
+                renderAdminProducts();
+            }
+
+            if (viewId === 'view-catalog') {
+                renderClientProducts();
+                applyClientLogo();
+            }
+        }
+
+        // --- SISTEMA DE LOGIN ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+
+            if (u === shopConfig.adminUser && p === shopConfig.adminPass) {
+                isLoggedIn = true;
+                showToast("Login realizado com sucesso!");
+                document.getElementById('login-form').reset();
+                switchView('view-admin');
+            } else {
+                showToast("Usuário ou senha incorretos!", "error");
+            }
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            showToast("Você saiu do painel.");
+            switchView('view-catalog');
+        }
+
+        // --- PERSISTÊNCIA (LOCALSTORAGE) ---
+        function saveData() {
+            const dataToSave = { products, shopConfig };
+            localStorage.setItem('meu_catalogo_dados', JSON.stringify(dataToSave));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('meu_catalogo_dados');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    products = parsed.products || [];
+                    shopConfig = { ...shopConfig, ...parsed.shopConfig }; // Merge para manter propriedades novas se existirem
+                } catch (e) { console.error("Erro ao carregar dados", e); }
+            }
+            
+            // Atualiza visual
+            document.getElementById('client-shop-name').innerText = shopConfig.name;
+            document.getElementById('client-shop-slogan').innerText = shopConfig.slogan;
+            applyClientLogo();
+            renderClientProducts();
+        }
+
+        // --- PAINEL ADMIN: CONFIGURAÇÕES E PERFIL ---
+        function loadAdminSettings() {
+            document.getElementById('cfg-name').value = shopConfig.name;
+            document.getElementById('cfg-slogan').value = shopConfig.slogan;
+            document.getElementById('cfg-whatsapp').value = shopConfig.whatsapp;
+            document.getElementById('cfg-user').value = shopConfig.adminUser;
+            document.getElementById('cfg-pass').value = shopConfig.adminPass;
+
+            const logoPreview = document.getElementById('admin-logo-preview');
+            const logoIcon = document.getElementById('admin-logo-icon');
+            
+            if (shopConfig.logo) {
+                logoPreview.src = shopConfig.logo;
+                logoPreview.classList.remove('hidden');
+                logoIcon.classList.add('hidden');
+                currentAdminLogo = shopConfig.logo;
+            } else {
+                logoPreview.classList.add('hidden');
+                logoIcon.classList.remove('hidden');
+                currentAdminLogo = null;
+            }
+        }
+
+        function saveSettings(e) {
+            e.preventDefault();
+            shopConfig.name = document.getElementById('cfg-name').value;
+            shopConfig.slogan = document.getElementById('cfg-slogan').value;
+            shopConfig.whatsapp = document.getElementById('cfg-whatsapp').value;
+            shopConfig.adminUser = document.getElementById('cfg-user').value;
+            shopConfig.adminPass = document.getElementById('cfg-pass').value;
+            shopConfig.logo = currentAdminLogo;
+
+            saveData();
+            
+            // Atualiza cabeçalho do cliente também
+            document.getElementById('client-shop-name').innerText = shopConfig.name;
+            document.getElementById('client-shop-slogan').innerText = shopConfig.slogan;
+            
+            showToast("Configurações salvas com sucesso!");
+        }
+
+        // --- MANIPULAÇÃO DE IMAGENS ---
+        function handleAdminLogo(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentAdminLogo = e.target.result;
+                document.getElementById('admin-logo-preview').src = currentAdminLogo;
+                document.getElementById('admin-logo-preview').classList.remove('hidden');
+                document.getElementById('admin-logo-icon').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleProductImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                currentProductImage = e.target.result;
+                document.getElementById('admin-image-preview').src = currentProductImage;
+                document.getElementById('admin-image-preview').classList.remove('hidden');
+                document.getElementById('admin-image-placeholder').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function applyClientLogo() {
+            const imgEl = document.getElementById('client-logo-img');
+            const iconEl = document.getElementById('client-logo-icon');
+            if (shopConfig.logo) {
+                imgEl.src = shopConfig.logo;
+                imgEl.classList.remove('hidden');
+                iconEl.classList.add('hidden');
+            } else {
+                imgEl.classList.add('hidden');
+                iconEl.classList.remove('hidden');
+            }
+        }
+
+        // --- PAINEL ADMIN: GESTÃO DE PRODUTOS ---
+        function addProduct(event) {
+            event.preventDefault();
+            if (!currentProductImage) return showToast('Por favor, adicione uma foto do produto!', 'error');
+
+            const product = {
+                id: Date.now(),
+                name: document.getElementById('prod-name').value,
+                desc: document.getElementById('prod-desc').value,
+                price: parseFloat(document.getElementById('prod-price').value),
+                image: currentProductImage
+            };
+
+            products.unshift(product);
+            
+            // Reset Form
+            document.getElementById('admin-product-form').reset();
+            document.getElementById('admin-image-preview').classList.add('hidden');
+            document.getElementById('admin-image-placeholder').classList.remove('hidden');
+            currentProductImage = null;
+            
+            saveData();
+            renderAdminProducts();
+            showToast('Produto adicionado ao catálogo!');
+        }
+
+        function deleteProduct(id) {
+            if(!confirm("Tem certeza que deseja remover este produto permanentemente?")) return;
+            products = products.filter(p => p.id !== id);
+            saveData();
+            renderAdminProducts();
+            showToast('Produto removido.');
+        }
+
+        function renderAdminProducts() {
+            const list = document.getElementById('admin-products-list');
+            document.getElementById('admin-product-count').innerText = products.length;
+            
+            if (products.length === 0) {
+                list.innerHTML = `<div class="p-8 text-center text-gray-400 text-sm">Nenhum produto cadastrado.</div>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            products.forEach(p => {
+                list.innerHTML += `
+                    <div class="flex items-center gap-4 p-3 md:p-4 hover:bg-gray-100 transition bg-white">
+                        <div class="w-12 h-12 md:w-16 md:h-16 shrink-0 bg-white border border-gray-100 rounded-lg overflow-hidden flex items-center justify-center p-1">
+                            <img src="${p.image}" class="w-full h-full object-contain">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-bold text-slate-800 text-sm md:text-base truncate">${p.name}</h4>
+                            <p class="text-xs text-gray-500 truncate">${p.desc || ''}</p>
+                            <p class="text-indigo-600 font-bold text-sm mt-0.5">${currencyFormatter.format(p.price)}</p>
+                        </div>
+                        <button onclick="deleteProduct(${p.id})" class="w-8 h-8 md:w-10 md:h-10 rounded-full bg-rose-50 text-rose-500 hover:bg-rose-500 hover:text-white transition flex items-center justify-center shrink-0" title="Remover Produto">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        // --- CATÁLOGO DO CLIENTE: RENDERIZAÇÃO E PEDIDOS ---
+        function renderClientProducts() {
+            const grid = document.getElementById('client-products-grid');
+            const empty = document.getElementById('empty-state');
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+            const filtered = products.filter(p => p.name.toLowerCase().includes(searchTerm));
+
+            if (filtered.length === 0) {
+                grid.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.classList.remove('hidden');
+            grid.innerHTML = '';
+
+            filtered.forEach(p => {
+                grid.innerHTML += `
+                    <div class="product-card bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-lg hover:border-indigo-200 transition-all flex flex-col group">
+                        <div class="relative aspect-square bg-white border-b border-gray-50 overflow-hidden p-4 flex items-center justify-center">
+                            <img src="${p.image}" class="w-full h-full object-contain group-hover:scale-105 transition duration-500">
+                        </div>
+                        <div class="p-4 flex flex-col flex-grow">
+                            <h3 class="text-slate-800 font-bold text-sm md:text-base mb-1 line-clamp-2">${p.name}</h3>
+                            ${p.desc ? `<p class="text-xs text-gray-500 mb-3 line-clamp-2">${p.desc}</p>` : ''}
+                            <div class="mt-auto flex flex-col md:flex-row md:justify-between md:items-center gap-2 pt-2">
+                                <span class="text-lg md:text-xl font-black text-indigo-600">${currencyFormatter.format(p.price)}</span>
+                                <button onclick="shareWhatsApp(${p.id})" class="w-full md:w-auto bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs md:text-sm font-bold hover:bg-emerald-600 transition flex items-center justify-center gap-2 shadow-md shadow-emerald-200">
+                                    <i class="fa-brands fa-whatsapp text-lg"></i> <span class="md:hidden lg:inline">Pedir</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function shareWhatsApp(productId) {
+            const p = products.find(prod => prod.id === productId);
+            const descText = p.desc ? `\nDetalhes: ${p.desc}` : '';
+            const text = encodeURIComponent(`Olá! Tenho interesse em: *${p.name}* (${currencyFormatter.format(p.price)})${descText}\n\nPode me passar mais informações?`);
+            
+            let number = shopConfig.whatsapp || "";
+            
+            // Adiciona o DDI do Brasil (55) se o usuário digitou apenas o DDD + Número (10 ou 11 dígitos)
+            if (number.length === 10 || number.length === 11) {
+                number = '55' + number;
+            }
+
+            if (number) {
+                window.open(`https://wa.me/${number}?text=${text}`, '_blank');
+            } else {
+                alert("O lojista ainda não configurou o número de WhatsApp para receber pedidos.");
+                window.open(`https://wa.me/?text=${text}`, '_blank');
+            }
+        }
+
+        // --- BACKUP E RESTAURAÇÃO ---
+        function exportData() {
+            const data = { products, shopConfig };
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `backup-catalogo-${new Date().getTime()}.json`;
+            a.click();
+            showToast("Backup gerado com sucesso!");
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    products = data.products || [];
+                    shopConfig = { ...shopConfig, ...(data.shopConfig || data.config || {}) };
+                    saveData();
+                    loadAdminSettings();
+                    renderAdminProducts();
+                    showToast("Dados importados com sucesso!");
+                } catch(err) {
+                    showToast("Erro ao ler o arquivo JSON.", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- SISTEMA DE TOAST (AVISOS) ---
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = { success: 'bg-emerald-500', error: 'bg-rose-500', info: 'bg-indigo-500' };
+            toast.className = `toast-enter ${colors[type]} text-white px-5 py-3 rounded-xl shadow-lg flex items-center gap-3 font-bold text-sm`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-triangle-exclamation' : 'fa-check-circle'}"></i> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+        }
+    </script>
+</body>
+</html>
